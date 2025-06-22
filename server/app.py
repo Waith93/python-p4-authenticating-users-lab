@@ -18,6 +18,42 @@ db.init_app(app)
 
 api = Api(app)
 
+class Login(Resource):
+    def post(self) :
+        data = request.get_json()
+        if not data or 'username' not in data:
+            return jsonify({'error': 'Missing username'}), 400
+        
+        username = data.get('username')
+        user = User.query.filter_by(username=username).first()
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        session['user_id'] = user.id
+        return user.to_dict(), 200
+
+api.add_resource(Login, '/login')
+
+class Logout(Resource):
+    def delete(self):
+          session.pop('user_id', None)
+          return {}, 204
+
+api.add_resource(Logout, '/logout')
+
+class CheckSession(Resource):
+    def get(self):
+        user_id = session.get('user_id')
+
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+               return user.to_dict(), 200
+        return {}, 401
+
+api.add_resource(CheckSession, '/check_session')
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -26,6 +62,7 @@ class ClearSession(Resource):
         session['user_id'] = None
 
         return {}, 204
+
 
 class IndexArticle(Resource):
     
